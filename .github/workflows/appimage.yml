@@ -31,7 +31,7 @@ jobs:
     - name: Install ncurses
       shell: 'scl enable devtoolset-11 "bash {0}"'
       run: |
-        wget -O /ncurses.tar.gz https://invisible-island.net/archives/ncurses/ncurses-6.3.tar.gz
+        wget -O /ncurses.tar.gz https://invisible-island.net/archives/ncurses/ncurses-6.4.tar.gz
         mkdir /ncurses
         tar xf /ncurses.tar.gz --strip-components=1 -C /ncurses
         mkdir /ncurses-prefix
@@ -40,6 +40,15 @@ jobs:
         make -j$(nproc)
         make install DESTDIR=/ncurses-prefix
         popd
+    - name: Install rust
+      shell: 'scl enable devtoolset-11 rh-git227 "bash {0}"'
+      env:
+        CARGO_HOME: /opt/cargo
+        RUSTUP_HOME: /opt/rustup
+      run: |
+        mkdir -p $CARGO_HOME $RUSTUP_HOME
+        curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path --default-toolchain 1.68.2
+        echo "PATH=$CARGO_HOME/bin:$PATH" >> $GITHUB_ENV
     - uses: actions/checkout@v3
       with:
         fetch-depth: 0
@@ -56,6 +65,8 @@ jobs:
       env:
         FISH_NCURSES_ROOT: /ncurses-prefix/usr
         LC_CTYPE: en_US.UTF-8
+        CARGO_HOME: /opt/cargo
+        RUSTUP_HOME: /opt/rustup
       run: ./build_tools/make_appimage.sh
     - name: Verify dependencies
       shell: 'scl enable devtoolset-11 rh-git227 "bash {0}"'
@@ -72,6 +83,7 @@ jobs:
         retention-days: 1
 
   release:
+    if: ${{ false }}  # disable for now
     runs-on: ubuntu-latest
     needs: [appimage]
     permissions:
